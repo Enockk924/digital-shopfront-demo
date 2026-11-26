@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://enockk924.github.io/digital-shopfront-demo/sitemap.xml
