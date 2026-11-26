@@ -1,25 +1,38 @@
-# LOOK UP DIGITAL — Company Website
+# LOOK UP DIGITAL — Official Business Website
 
-Official website for LOOK UP DIGITAL / AI Digital Business Studio.
+**Brand:** LOOK UP DIGITAL  
+**Business:** AI Digital Business Studio  
+**Tagline:** Helping Businesses Get Found Online.  
+**Official email:** lookupdigital.business@gmail.com
 
-Tagline: **Helping Businesses Get Found Online**
+## Live website
+https://enockk924.github.io/digital-shopfront-demo/
 
-## Included
-- Responsive company homepage and service information
-- AI solutions and automation, website/app development, digital marketing/social media, graphic design/branding
-- Contact enquiry flow (opens a prepared email; visitor sends it)
-- Affiliate tools directory section with clear disclosure and no invented partner links
-- Advertising-ready placement (no ads or AdSense code active until approval)
-- Initial privacy policy
-- Backend AI assistant endpoint source in `backend/index.ts`
+## Website contents
+- Responsive business homepage and service descriptions
+- AI Solutions & Automation
+- Website & App Development
+- Digital Marketing & Social Media
+- Graphic Design & Branding
+- Business Insights index and four original guides
+- Contact enquiry form that prepares an email draft; the visitor must press Send
+- AI website assistant connected to the deployed Cloudflare Worker endpoint
+- Recommended digital tools with transparent non-affiliate disclosures
+- Privacy Policy and Terms of Use
+- XML sitemap, robots.txt, structured data, favicon and custom 404 page
 
-## Contact
-lookupdigital.business@gmail.com
+## Deployment and integrations
+- The static website is published through GitHub Pages from the `main` branch.
+- The homepage assistant sends messages to the deployed endpoint at `https://lookupdigital-assistant.enockokuku3.workers.dev/api/assistant`.
+- `backend/index.ts` is an alternative AppDeploy SDK backend source file; GitHub Pages does not execute this TypeScript file.
+- The contact form uses the visitor's email application. It does not submit form contents to a website database.
 
-## Important activation notes
-- The static frontend can be hosted on GitHub Pages or another static host.
-- The AI assistant requires the backend to be deployed on a compatible AppDeploy environment; a static GitHub Pages deployment cannot run the backend endpoint.
-- Payment checkout is not active. Configure a verified payment provider and business merchant account before taking online payments.
-- Add approved affiliate URLs only after each programme approves the account.
-- Apply for AdSense only after the website has sufficient original content and meets the programme's requirements; add the actual publisher code only after approval.
-- Insert verified social profile URLs when available; do not use guessed profile handles.
+## Items that require verified activation
+- No payment checkout is active. Confirm scope and payment instructions through a written quotation or invoice.
+- No advertising network or AdSense publisher code is active. Add advertising only after account approval and required policy updates.
+- Recommended tools are direct official links, not affiliate links or claimed partnerships. Add affiliate URLs only after approval and disclose them clearly.
+- Public social profile links should be added only after each exact official URL is verified; never guess profile handles.
+- No testimonials, client names, portfolio results, physical address or phone number should be published unless confirmed and authorised.
+
+## Maintenance
+Keep the homepage, blog, articles, privacy notice, terms, sitemap and this README aligned whenever services or integrations change.
