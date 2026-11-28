@@ -45,6 +45,19 @@ body.auth-pending main,body.auth-pending footer{display:none}
 <section class="stats">
 <div class="stat"><span>Total projects</span><strong id="total">0</strong></div><div class="stat"><span>In progress</span><strong id="progress">0</strong></div><div class="stat"><span>Awaiting payment</span><strong id="awaiting">0</strong></div><div class="stat"><span>Ready for delivery</span><strong id="ready">0</strong></div>
 </section>
+<section class="panel" id="partnerPanel" style="display:none;margin-bottom:20px">
+<div class="panelhead"><h2>Delivery partner access</h2><span class="pill">Owner only</span></div>
+<div style="padding:16px 18px">
+<p class="sub" style="margin:0 0 12px">Approve a Firebase Authentication account by adding its UID. Only active approved accounts can access assigned projects.</p>
+<form id="partnerForm" class="formgrid">
+<div class="field"><label for="partnerName">Partner display name</label><input id="partnerName" required placeholder="e.g. Design Partner"></div>
+<div class="field"><label for="partnerEmail">Partner email</label><input id="partnerEmail" type="email" required placeholder="partner@example.com"></div>
+<div class="field full"><label for="partnerUid">Firebase Authentication user UID</label><input id="partnerUid" required placeholder="Paste the partner's Firebase UID"></div>
+<div class="field full"><div class="actions" style="justify-content:flex-start;margin:0"><button class="primary" type="submit">Approve partner account</button></div></div>
+</form>
+<div id="partnerMessage" role="status" style="font-size:13px;margin-top:10px;color:#526078"></div>
+<div id="partnerRows" style="margin-top:12px"></div>
+</div></section>
 <section class="panel"><div class="panelhead"><h2>Project register</h2><div class="filters"><input id="search" placeholder="Search projects…" aria-label="Search projects"><select id="filter" aria-label="Filter by stage"><option value="">All stages</option><option>New enquiry</option><option>Quotation sent</option><option>Payment confirmed</option><option>Partner assigned</option><option>Work in progress</option><option>Quality check</option><option>Delivered</option></select></div></div>
 <div class="tablewrap"><table><thead><tr><th>Project / customer</th><th>Service</th><th>Stage</th><th>Due date</th><th>Payment</th><th>Details</th></tr></thead><tbody id="rows"></tbody></table></div></section>
 </main><footer>LOOK UP DIGITAL · Helping Businesses Get Found Online</footer>
@@ -64,7 +77,7 @@ body.auth-pending main,body.auth-pending footer{display:none}
 <div class="field"><label for="dstage">Project stage</label><select id="dstage"><option>New enquiry</option><option>Quotation sent</option><option>Payment confirmed</option><option>Partner assigned</option><option>Work in progress</option><option>Quality check</option><option>Delivered</option></select></div>
 <div class="field"><label for="dpayment">Payment status</label><select id="dpayment"><option>Not paid</option><option>Awaiting payment</option><option>Paid</option></select></div>
 <div class="field"><label for="ddue">Due date</label><input id="ddue" type="date"></div>
-<div class="field"><label for="dpartner">Assigned partner account UID</label><input id="dpartner" placeholder="Partner Firebase UID"></div>
+<div class="field"><label for="dpartner">Assigned partner account UID</label><select id="dpartner"><option value="">Not assigned</option></select></div>
 <div class="field"><label for="dqc">Quality check</label><select id="dqc"><option>Not checked</option><option>In progress</option><option>Passed</option><option>Needs changes</option></select></div>
 <div class="field"><label for="ddelivered">Delivery date</label><input id="ddelivered" type="date"></div>
 <div class="field full"><label for="dnotes">Progress / quality notes</label><textarea id="dnotes" rows="3" placeholder="Add a progress note"></textarea></div>
@@ -76,7 +89,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, query, where,
-  addDoc, updateDoc, deleteDoc, serverTimestamp
+  addDoc, setDoc, updateDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -99,6 +112,7 @@ const qcOptions = ["Not checked","In progress","Passed","Needs changes"];
 let currentUser = null;
 let currentRole = null;
 let projects = [];
+let partnerAccounts = [];
 let activeProjectId = null;
 
 function esc(value) {
@@ -156,6 +170,46 @@ async function loadProjects() {
     setNotice("Could not load projects. Check that the published Firestore rules match the owner UID and that this account has permission. Error: "+(error.code||"unknown"),true);
   }
 }
+function renderPartners() {
+  $("partnerRows").innerHTML = partnerAccounts.length ? partnerAccounts.map(p =>
+    '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap"><div><strong>'+esc(p.displayName||"Unnamed partner")+'</strong><div style="font-size:12px;color:var(--muted)">'+esc(p.email||"")+' · '+esc(p.uid)+'</div></div><div><span class="pill">'+(p.active?"Active":"Inactive")+'</span> '+(p.active?'<button type="button" class="secondary deactivate-partner" data-uid="'+esc(p.uid)+'">Deactivate</button>':'<button type="button" class="secondary activate-partner" data-uid="'+esc(p.uid)+'">Activate</button>')+'</div></div>'
+  ).join("") : '<p class="sub">No partner accounts approved yet.</p>';
+  $("dpartner").innerHTML = '<option value="">Not assigned</option>' + partnerAccounts.filter(p=>p.active).map(p=>'<option value="'+esc(p.uid)+'">'+esc(p.displayName||p.email||p.uid)+'</option>').join("");
+}
+async function loadPartners() {
+  if (!isOwner()) return;
+  const snap = await getDocs(collection(db,"users"));
+  partnerAccounts = snap.docs.map(d=>({uid:d.id,...d.data()})).filter(p=>p.role==="partner");
+  renderPartners();
+}
+$("partnerRows").addEventListener("click",async e=>{
+  const b=e.target.closest(".deactivate-partner,.activate-partner");
+  if(!b)return;
+  try {
+    await updateDoc(doc(db,"users",b.dataset.uid),{active:b.classList.contains("activate-partner"),updatedAt:serverTimestamp()});
+    await loadPartners();
+    $("partnerMessage").textContent="Partner access updated.";
+  } catch(error) {
+    $("partnerMessage").textContent="Could not update partner access: "+(error.code||"unknown");
+  }
+});
+$("partnerForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!isOwner())return;
+  const uid=$("partnerUid").value.trim();
+  if(uid.length<20){$("partnerMessage").textContent="Please check the Firebase UID. It looks too short.";return;}
+  try {
+    await setDoc(doc(db,"users",uid),{
+      displayName:$("partnerName").value.trim(),email:$("partnerEmail").value.trim(),
+      role:"partner",active:true,updatedAt:serverTimestamp()
+    });
+    e.target.reset();
+    $("partnerMessage").textContent="Partner account approved. You can now assign projects to this partner.";
+    await loadPartners();
+  } catch(error) {
+    $("partnerMessage").textContent="Partner approval failed: "+(error.code||"unknown");
+  }
+});
 function showDetails(project) {
   activeProjectId = project.id;
   $("detailTitle").textContent = project.name+" · "+project.customer;
@@ -163,6 +217,7 @@ function showDetails(project) {
   $("dstage").value = project.stage;
   $("dpayment").value = project.payment || "Not paid";
   $("ddue").value = project.due || "";
+  renderPartners();
   $("dpartner").value = project.assignedPartnerUid || "";
   $("dqc").value = project.qcStatus || "Not checked";
   $("ddelivered").value = project.deliveryDate || "";
@@ -257,6 +312,8 @@ document.body.classList.add("auth-pending");
 onAuthStateChanged(auth,async user=>{
   currentUser=user; currentRole=null; projects=[];
   if(!user){
+    $("partnerPanel").style.display="none";
+    partnerAccounts=[];
     document.body.classList.add("auth-pending");
     gate.style.display="block"; logout.style.display="none";
     $("rows").innerHTML=""; render();
@@ -266,7 +323,10 @@ onAuthStateChanged(auth,async user=>{
   logout.style.display="inline-block";
   if(user.uid===OWNER_UID){
     currentRole="owner";
+    $("partnerPanel").style.display="block";
+    try { await loadPartners(); } catch(error) { $("partnerMessage").textContent="Could not load partner list: "+(error.code||"unknown"); }
   } else {
+    $("partnerPanel").style.display="none";
     try {
       const profile=await getDoc(doc(db,"users",user.uid));
       if(!profile.exists()||profile.data().role!=="partner"||profile.data().active!==true){
