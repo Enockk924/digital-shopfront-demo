@@ -39,6 +39,21 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 <div class="field"><label for="due">Due date</label><input id="due" type="date"></div>
 <div class="field"><label for="payment">Payment status</label><select id="payment"><option>Not paid</option><option>Awaiting payment</option><option>Paid</option></select></div>
 </div><div class="actions"><button type="button" class="secondary" id="cancel">Cancel</button><button class="primary" type="submit">Add to preview</button></div></form></div></div>
+
+<div class="modal" id="detailModal"><div class="dialog">
+<h2 id="detailTitle">Project details</h2>
+<p class="sub" style="margin-bottom:15px">Sample-only project record. Changes are temporary and disappear when refreshed.</p>
+<form id="detailForm"><div class="formgrid">
+<div class="field"><label for="dstage">Project stage</label><select id="dstage"><option>New enquiry</option><option>Quotation sent</option><option>Payment confirmed</option><option>Partner assigned</option><option>Work in progress</option><option>Quality check</option><option>Delivered</option></select></div>
+<div class="field"><label for="dpayment">Payment status</label><select id="dpayment"><option>Not paid</option><option>Awaiting payment</option><option>Paid</option></select></div>
+<div class="field"><label for="ddue">Due date</label><input id="ddue" type="date"></div>
+<div class="field"><label for="dpartner">Delivery partner (sample label)</label><input id="dpartner" placeholder="e.g. Sample partner 1"></div>
+<div class="field"><label for="dqc">Quality check</label><select id="dqc"><option>Not checked</option><option>Needs revision</option><option>Approved</option></select></div>
+<div class="field"><label for="ddelivered">Delivery date</label><input id="ddelivered" type="date"></div>
+<div class="field full"><label for="dnotes">Progress / quality notes (sample only)</label><textarea id="dnotes" rows="3" placeholder="Add a sample progress note"></textarea></div>
+</div><div class="actions"><button type="button" class="secondary" id="detailCancel">Close</button><button class="primary" type="submit">Save changes</button></div></form>
+</div></div>
+
 <script>
 const projects=[
 {name:'Starter business website',customer:'Sample customer A',service:'Website design',stage:'Work in progress',due:'2026-12-05',payment:'Paid',partner:'',qc:'Not checked',delivered:'',notes:''},
