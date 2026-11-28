@@ -19,11 +19,28 @@ button{border:0;border-radius:9px;padding:11px 15px;font-weight:700;cursor:point
 .modal{display:none;position:fixed;inset:0;background:#0b1830a8;z-index:4;padding:18px;overflow:auto}.dialog{background:#fff;max-width:560px;margin:35px auto;border-radius:16px;padding:22px}.dialog h2{margin:0 0 14px;color:var(--navy)}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;font-weight:700;color:#526078}.field.full{grid-column:1/-1}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 @media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}h1{font-size:22px}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.stat{padding:13px}.stat strong{font-size:23px}}
+
+#loginGate{max-width:440px;margin:36px auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 28px #10233f12}
+#loginGate h2{margin:0 0 6px;color:var(--navy)}#loginGate p{color:var(--muted);font-size:13px}
+#loginGate .field{margin:12px 0}#loginGate input{width:100%}#loginMessage{min-height:22px;color:#9b1c1c;font-size:13px}
+#logoutBtn{background:#eaf0f8;color:#fff;border:1px solid #ffffff55;padding:8px 12px}
+body.auth-pending main,body.auth-pending footer{display:none}
 </style></head>
 <body>
-<header><div class="brand">LOOK UP DIGITAL <small>AI Digital Business Studio · Internal project manager</small></div><a href="../" style="color:#fff;font-size:13px">← Business website</a></header>
+<header><div class="brand">LOOK UP DIGITAL <small>AI Digital Business Studio · Internal project manager</small></div><div style="display:flex;align-items:center;gap:12px"><button id="logoutBtn" type="button" style="display:none">Sign out</button><a href="../" style="color:#fff;font-size:13px">← Business website</a></div></header>
+
+<section id="loginGate" style="display:none">
+<h2>Project manager sign in</h2>
+<p>Sign in with your authorised LOOK UP DIGITAL Manager account.</p>
+<form id="loginForm">
+<div class="field"><label for="loginEmail">Email address</label><input id="loginEmail" type="email" autocomplete="username" required></div>
+<div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+<div id="loginMessage" role="status"></div>
+<button class="primary" type="submit">Sign in</button>
+</form></section>
+
 <main>
-<div class="notice"><strong>Preview only:</strong> This is the first interface prototype. It uses sample records and temporary browser memory only. Do not enter real customer details, passwords, payment information or confidential partner data. Secure sign-in and private database are not connected yet.</div>
+<div class="notice"><strong>Limited preview:</strong> Sign-in is connected to Firebase. Project records are still sample-only and temporary; the private Firestore database and owner/partner access rules have not yet been connected. Do not enter real customer or partner information.</div>
 <div class="top"><div><h1>Project dashboard</h1><p class="sub">Track enquiries, outsourced work and delivery.</p></div><button class="primary" id="addBtn">＋ Add project</button></div>
 <section class="stats">
 <div class="stat"><span>Total projects</span><strong id="total">3</strong></div><div class="stat"><span>In progress</span><strong id="progress">1</strong></div><div class="stat"><span>Awaiting payment</span><strong id="awaiting">1</strong></div><div class="stat"><span>Ready for delivery</span><strong id="ready">1</strong></div>
@@ -68,4 +85,48 @@ $('addBtn').onclick=()=>$('modal').style.display='block';$('cancel').onclick=()=
 $('rows').addEventListener('click',e=>{const b=e.target.closest('.open-project');if(!b)return;activeProject=Number(b.dataset.index);const p=projects[activeProject];$('detailTitle').textContent=p.name+' · '+p.customer;$('dstage').value=p.stage;$('dpayment').value=p.payment;$('ddue').value=p.due||'';$('dpartner').value=p.partner||'';$('dqc').value=p.qc||'Not checked';$('ddelivered').value=p.delivered||'';$('dnotes').value=p.notes||'';$('detailModal').style.display='block'});
 $('detailForm').onsubmit=e=>{e.preventDefault();if(activeProject<0)return;const p=projects[activeProject];p.stage=$('dstage').value;p.payment=$('dpayment').value;p.due=$('ddue').value;p.partner=$('dpartner').value;p.qc=$('dqc').value;p.delivered=$('ddelivered').value;p.notes=$('dnotes').value;$('detailModal').style.display='none';render()};
 $('projectForm').onsubmit=e=>{e.preventDefault();projects.unshift({name:$('pname').value,customer:$('customer').value,service:$('service').value,stage:$('stage').value,due:$('due').value,payment:$('payment').value,partner:'',qc:'Not checked',delivered:'',notes:''});e.target.reset();$('modal').style.display='none';render()};render();
-</script></body></html>
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyDhik_G6C1p2EzE3Vmfm_fPVseisvrspj8",
+  authDomain: "look-up-digital-manager.firebaseapp.com",
+  projectId: "look-up-digital-manager",
+  storageBucket: "look-up-digital-manager.firebasestorage.app",
+  messagingSenderId: "339297675981",
+  appId: "1:339297675981:web:52ac6fae2c7e47ff9a1784",
+  measurementId: "G-CXBRD7FLZK"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+document.body.classList.add("auth-pending");
+const gate = document.getElementById("loginGate");
+const message = document.getElementById("loginMessage");
+const logout = document.getElementById("logoutBtn");
+onAuthStateChanged(auth, user => {
+  if (user) {
+    gate.style.display = "none";
+    document.body.classList.remove("auth-pending");
+    logout.style.display = "inline-block";
+  } else {
+    document.body.classList.add("auth-pending");
+    gate.style.display = "block";
+    logout.style.display = "none";
+  }
+});
+document.getElementById("loginForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  message.textContent = "Signing in…";
+  try {
+    await signInWithEmailAndPassword(auth, document.getElementById("loginEmail").value.trim(), document.getElementById("loginPassword").value);
+    message.textContent = "";
+  } catch (error) {
+    message.textContent = error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found"
+      ? "Email or password is incorrect. Please try again."
+      : "Sign-in failed. Check your connection and try again.";
+  }
+});
+logout.addEventListener("click", async () => { await signOut(auth); });
+</script>
+</body></html>
