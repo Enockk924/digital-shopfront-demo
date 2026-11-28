@@ -40,10 +40,10 @@ body.auth-pending main,body.auth-pending footer{display:none}
 </form></section>
 
 <main>
-<div class="notice"><strong>Limited preview:</strong> Sign-in is connected to Firebase. Project records are still sample-only and temporary; the private Firestore database and owner/partner access rules have not yet been connected. Do not enter real customer or partner information.</div>
+<div class="notice" id="statusNotice"><strong>Private project manager:</strong> Sign in to load records from the protected Firestore database. Use test records until owner and partner access have been verified.</div>
 <div class="top"><div><h1>Project dashboard</h1><p class="sub">Track enquiries, outsourced work and delivery.</p></div><button class="primary" id="addBtn">＋ Add project</button></div>
 <section class="stats">
-<div class="stat"><span>Total projects</span><strong id="total">3</strong></div><div class="stat"><span>In progress</span><strong id="progress">1</strong></div><div class="stat"><span>Awaiting payment</span><strong id="awaiting">1</strong></div><div class="stat"><span>Ready for delivery</span><strong id="ready">1</strong></div>
+<div class="stat"><span>Total projects</span><strong id="total">0</strong></div><div class="stat"><span>In progress</span><strong id="progress">0</strong></div><div class="stat"><span>Awaiting payment</span><strong id="awaiting">0</strong></div><div class="stat"><span>Ready for delivery</span><strong id="ready">0</strong></div>
 </section>
 <section class="panel"><div class="panelhead"><h2>Project register</h2><div class="filters"><input id="search" placeholder="Search projects…" aria-label="Search projects"><select id="filter" aria-label="Filter by stage"><option value="">All stages</option><option>New enquiry</option><option>Quotation sent</option><option>Payment confirmed</option><option>Partner assigned</option><option>Work in progress</option><option>Quality check</option><option>Delivered</option></select></div></div>
 <div class="tablewrap"><table><thead><tr><th>Project / customer</th><th>Service</th><th>Stage</th><th>Due date</th><th>Payment</th><th>Details</th></tr></thead><tbody id="rows"></tbody></table></div></section>
@@ -64,31 +64,21 @@ body.auth-pending main,body.auth-pending footer{display:none}
 <div class="field"><label for="dstage">Project stage</label><select id="dstage"><option>New enquiry</option><option>Quotation sent</option><option>Payment confirmed</option><option>Partner assigned</option><option>Work in progress</option><option>Quality check</option><option>Delivered</option></select></div>
 <div class="field"><label for="dpayment">Payment status</label><select id="dpayment"><option>Not paid</option><option>Awaiting payment</option><option>Paid</option></select></div>
 <div class="field"><label for="ddue">Due date</label><input id="ddue" type="date"></div>
-<div class="field"><label for="dpartner">Delivery partner (sample label)</label><input id="dpartner" placeholder="e.g. Sample partner 1"></div>
-<div class="field"><label for="dqc">Quality check</label><select id="dqc"><option>Not checked</option><option>Needs revision</option><option>Approved</option></select></div>
+<div class="field"><label for="dpartner">Assigned partner account UID</label><input id="dpartner" placeholder="Partner Firebase UID"></div>
+<div class="field"><label for="dqc">Quality check</label><select id="dqc"><option>Not checked</option><option>In progress</option><option>Passed</option><option>Needs changes</option></select></div>
 <div class="field"><label for="ddelivered">Delivery date</label><input id="ddelivered" type="date"></div>
-<div class="field full"><label for="dnotes">Progress / quality notes (sample only)</label><textarea id="dnotes" rows="3" placeholder="Add a sample progress note"></textarea></div>
-</div><div class="actions"><button type="button" class="secondary" id="detailCancel">Close</button><button class="primary" type="submit">Save changes</button></div></form>
+<div class="field full"><label for="dnotes">Progress / quality notes</label><textarea id="dnotes" rows="3" placeholder="Add a progress note"></textarea></div>
+</div><div class="actions"><button type="button" class="secondary" id="detailCancel">Close</button><button class="secondary" type="button" id="deleteProjectBtn" style="display:none">Delete project</button><button class="primary" type="submit">Save changes</button></div></form>
 </div></div>
 
-<script>
-const projects=[
-{name:'Starter business website',customer:'Sample customer A',service:'Website design',stage:'Work in progress',due:'2026-12-05',payment:'Paid',partner:'',qc:'Not checked',delivered:'',notes:''},
-{name:'Social media brand pack',customer:'Sample customer B',service:'Graphic design',stage:'Quotation sent',due:'2026-12-08',payment:'Awaiting payment',partner:'',qc:'Not checked',delivered:'',notes:''},
-{name:'Local business SEO review',customer:'Sample customer C',service:'Digital marketing',stage:'Quality check',due:'2026-12-02',payment:'Paid',partner:'',qc:'Not checked',delivered:'',notes:''}
-];
-const $=id=>document.getElementById(id);
-function render(){const q=$('search').value.toLowerCase(),f=$('filter').value;const shown=projects.filter(p=>(!f||p.stage===f)&&Object.values(p).join(' ').toLowerCase().includes(q));$('rows').innerHTML=shown.length?shown.map(p=>'<tr><td><strong>'+esc(p.name)+'</strong>'+esc(p.customer)+'</td><td>'+esc(p.service)+'</td><td><span class="pill">'+esc(p.stage)+'</span></td><td>'+esc(p.due||'—')+'</td><td>'+esc(p.payment)+'</td><td><button class="secondary open-project" data-index="'+projects.indexOf(p)+'" type="button">Open</button></td></tr>').join(''):'<tr><td colspan="6" class="empty">No matching projects.</td></tr>';$('total').textContent=projects.length;$('progress').textContent=projects.filter(p=>p.stage==='Work in progress').length;$('awaiting').textContent=projects.filter(p=>p.payment==='Awaiting payment'||p.payment==='Not paid').length;$('ready').textContent=projects.filter(p=>p.stage==='Quality check').length}
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-let activeProject=-1;
-$('addBtn').onclick=()=>$('modal').style.display='block';$('cancel').onclick=()=>$('modal').style.display='none';$('detailCancel').onclick=()=>$('detailModal').style.display='none';$('search').oninput=render;$('filter').onchange=render;
-$('rows').addEventListener('click',e=>{const b=e.target.closest('.open-project');if(!b)return;activeProject=Number(b.dataset.index);const p=projects[activeProject];$('detailTitle').textContent=p.name+' · '+p.customer;$('dstage').value=p.stage;$('dpayment').value=p.payment;$('ddue').value=p.due||'';$('dpartner').value=p.partner||'';$('dqc').value=p.qc||'Not checked';$('ddelivered').value=p.delivered||'';$('dnotes').value=p.notes||'';$('detailModal').style.display='block'});
-$('detailForm').onsubmit=e=>{e.preventDefault();if(activeProject<0)return;const p=projects[activeProject];p.stage=$('dstage').value;p.payment=$('dpayment').value;p.due=$('ddue').value;p.partner=$('dpartner').value;p.qc=$('dqc').value;p.delivered=$('ddelivered').value;p.notes=$('dnotes').value;$('detailModal').style.display='none';render()};
-$('projectForm').onsubmit=e=>{e.preventDefault();projects.unshift({name:$('pname').value,customer:$('customer').value,service:$('service').value,stage:$('stage').value,due:$('due').value,payment:$('payment').value,partner:'',qc:'Not checked',delivered:'',notes:''});e.target.reset();$('modal').style.display='none';render()};render();
-</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDoc, getDocs, query, where,
+  addDoc, updateDoc, deleteDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyDhik_G6C1p2EzE3Vmfm_fPVseisvrspj8",
   authDomain: "look-up-digital-manager.firebaseapp.com",
@@ -98,35 +88,198 @@ const firebaseConfig = {
   appId: "1:339297675981:web:52ac6fae2c7e47ff9a1784",
   measurementId: "G-CXBRD7FLZK"
 };
+const OWNER_UID = "hpxtcVxemAZKdqvOQ09sCJenU3m1";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-document.body.classList.add("auth-pending");
-const gate = document.getElementById("loginGate");
-const message = document.getElementById("loginMessage");
-const logout = document.getElementById("logoutBtn");
-onAuthStateChanged(auth, user => {
-  if (user) {
-    gate.style.display = "none";
-    document.body.classList.remove("auth-pending");
-    logout.style.display = "inline-block";
-  } else {
-    document.body.classList.add("auth-pending");
-    gate.style.display = "block";
-    logout.style.display = "none";
-  }
-});
-document.getElementById("loginForm").addEventListener("submit", async event => {
-  event.preventDefault();
-  message.textContent = "Signing in…";
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+const stages = ["New enquiry","Quotation sent","Payment confirmed","Partner assigned","Work in progress","Quality check","Delivered"];
+const partnerStages = ["Work in progress","Quality check","Delivered"];
+const qcOptions = ["Not checked","In progress","Passed","Needs changes"];
+let currentUser = null;
+let currentRole = null;
+let projects = [];
+let activeProjectId = null;
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function setNotice(message, error=false) {
+  $("statusNotice").innerHTML = "<strong>"+(error ? "Attention: " : "Status: ")+"</strong>"+esc(message);
+  $("statusNotice").style.background = error ? "#fff0f0" : "#fff8df";
+  $("statusNotice").style.color = error ? "#8a1c1c" : "#674d00";
+}
+function isOwner(){ return currentUser && currentUser.uid === OWNER_UID; }
+
+function render() {
+  const q = $("search").value.trim().toLowerCase();
+  const f = $("filter").value;
+  const shown = projects.filter(p => (!f || p.stage===f) &&
+    [p.name,p.customer,p.service,p.stage,p.payment,p.assignedPartnerUid,p.progressNotes].join(" ").toLowerCase().includes(q));
+  $("rows").innerHTML = shown.length ? shown.map(p =>
+    '<tr><td><strong>'+esc(p.name)+'</strong>'+esc(p.customer)+'</td><td>'+esc(p.service)+'</td><td><span class="pill">'+esc(p.stage)+'</span></td><td>'+esc(p.due||"—")+'</td><td>'+esc(p.payment||"—")+'</td><td><button class="secondary open-project" data-id="'+esc(p.id)+'" type="button">Open</button></td></tr>'
+  ).join("") : '<tr><td colspan="6" class="empty">No projects found. Add a project or check your assigned work.</td></tr>';
+  $("total").textContent = projects.length;
+  $("progress").textContent = projects.filter(p=>p.stage==="Work in progress").length;
+  $("awaiting").textContent = projects.filter(p=>p.payment==="Awaiting payment"||p.payment==="Not paid").length;
+  $("ready").textContent = projects.filter(p=>p.stage==="Quality check").length;
+  $("addBtn").style.display = isOwner() ? "inline-block" : "none";
+  $("filter").value = f;
+}
+function projectFromDoc(snap) {
+  const d = snap.data();
+  return {id:snap.id,name:d.name||"",customer:d.customer||"",service:d.service||"Other",
+    stage:d.stage||"New enquiry",due:d.due||"",payment:d.payment||"Not paid",
+    assignedPartnerUid:d.assignedPartnerUid||"",qcStatus:d.qcStatus||"Not checked",
+    deliveryDate:d.deliveryDate||"",progressNotes:d.progressNotes||""};
+}
+async function loadProjects() {
+  if (!currentUser) return;
+  setNotice("Loading your protected project records…");
   try {
-    await signInWithEmailAndPassword(auth, document.getElementById("loginEmail").value.trim(), document.getElementById("loginPassword").value);
-    message.textContent = "";
+    let snap;
+    if (isOwner()) {
+      snap = await getDocs(collection(db,"projects"));
+    } else {
+      const assignedQuery = query(collection(db,"projects"),where("assignedPartnerUid","==",currentUser.uid));
+      snap = await getDocs(assignedQuery);
+    }
+    projects = snap.docs.map(projectFromDoc);
+    render();
+    setNotice(isOwner()
+      ? "Connected to Firestore. You are signed in as the owner. Records are stored in the private database."
+      : "Connected to Firestore. You are signed in as a delivery partner and can see only work assigned to your account.");
   } catch (error) {
-    message.textContent = error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found"
-      ? "Email or password is incorrect. Please try again."
-      : "Sign-in failed. Check your connection and try again.";
+    console.error(error);
+    projects = [];
+    render();
+    setNotice("Could not load projects. Check that the published Firestore rules match the owner UID and that this account has permission. Error: "+(error.code||"unknown"),true);
+  }
+}
+function showDetails(project) {
+  activeProjectId = project.id;
+  $("detailTitle").textContent = project.name+" · "+project.customer;
+  $("dstage").innerHTML = (isOwner()?stages:partnerStages).map(x=>'<option>'+esc(x)+'</option>').join("");
+  $("dstage").value = project.stage;
+  $("dpayment").value = project.payment || "Not paid";
+  $("ddue").value = project.due || "";
+  $("dpartner").value = project.assignedPartnerUid || "";
+  $("dqc").value = project.qcStatus || "Not checked";
+  $("ddelivered").value = project.deliveryDate || "";
+  $("dnotes").value = project.progressNotes || "";
+  const owner = isOwner();
+  ["dpayment","ddue","dpartner","ddelivered"].forEach(id=>$(id).disabled=!owner);
+  $("deleteProjectBtn").style.display = owner ? "inline-block" : "none";
+  $("detailModal").querySelector(".sub").textContent = owner
+    ? "Owner view: you can manage the complete project record."
+    : "Partner view: you can update only stage, quality-check status and progress notes.";
+  $("detailModal").style.display = "block";
+}
+$("rows").addEventListener("click",e=>{
+  const b=e.target.closest(".open-project");
+  if(!b)return;
+  const p=projects.find(x=>x.id===b.dataset.id);
+  if(p)showDetails(p);
+});
+$("addBtn").onclick=()=>{ if(isOwner()) $("modal").style.display="block"; };
+$("cancel").onclick=()=>$("modal").style.display="none";
+$("detailCancel").onclick=()=>$("detailModal").style.display="none";
+$("search").oninput=render;
+$("filter").onchange=render;
+
+$("projectForm").onsubmit=async e=>{
+  e.preventDefault();
+  if(!isOwner())return;
+  const record = {
+    name:$("pname").value.trim(), customer:$("customer").value.trim(),
+    service:$("service").value, stage:$("stage").value, due:$("due").value,
+    payment:$("payment").value, assignedPartnerUid:"",
+    progressNotes:"", qcStatus:"Not checked", deliveryDate:"",
+    createdAt:serverTimestamp(), updatedAt:serverTimestamp()
+  };
+  try {
+    await addDoc(collection(db,"projects"),record);
+    e.target.reset(); $("modal").style.display="none";
+    await loadProjects();
+  } catch(error) {
+    console.error(error); setNotice("Project could not be saved: "+(error.code||"unknown"),true);
+  }
+};
+$("detailForm").onsubmit=async e=>{
+  e.preventDefault();
+  const p=projects.find(x=>x.id===activeProjectId);
+  if(!p||!currentUser)return;
+  const ref=doc(db,"projects",activeProjectId);
+  const update = isOwner() ? {
+    stage:$("dstage").value, payment:$("dpayment").value, due:$("ddue").value,
+    assignedPartnerUid:$("dpartner").value.trim(), qcStatus:$("dqc").value,
+    deliveryDate:$("ddelivered").value, progressNotes:$("dnotes").value,
+    updatedAt:serverTimestamp()
+  } : {
+    stage:$("dstage").value, qcStatus:$("dqc").value,
+    progressNotes:$("dnotes").value, updatedAt:serverTimestamp()
+  };
+  try {
+    await updateDoc(ref,update);
+    $("detailModal").style.display="none";
+    await loadProjects();
+  } catch(error) {
+    console.error(error); setNotice("Changes could not be saved: "+(error.code||"unknown"),true);
+  }
+};
+$("deleteProjectBtn").onclick=async()=>{
+  if(!isOwner()||!activeProjectId)return;
+  if(!confirm("Delete this project permanently?"))return;
+  try {
+    await deleteDoc(doc(db,"projects",activeProjectId));
+    $("detailModal").style.display="none";
+    await loadProjects();
+  } catch(error) {
+    console.error(error); setNotice("Project could not be deleted: "+(error.code||"unknown"),true);
+  }
+};
+
+$("stage").innerHTML=stages.map(x=>'<option>'+esc(x)+'</option>').join("");
+const gate=$("loginGate"), message=$("loginMessage"), logout=$("logoutBtn");
+logout.addEventListener("click",async()=>{await signOut(auth);});
+$("loginForm").addEventListener("submit",async event=>{
+  event.preventDefault(); message.textContent="Signing in…";
+  try {
+    await signInWithEmailAndPassword(auth,$("loginEmail").value.trim(),$("loginPassword").value);
+    message.textContent="";
+  } catch(error) {
+    message.textContent=error.code==="auth/invalid-credential"||error.code==="auth/wrong-password"||error.code==="auth/user-not-found"
+      ?"Email or password is incorrect. Please try again."
+      :"Sign-in failed. Check your connection and try again.";
   }
 });
-logout.addEventListener("click", async () => { await signOut(auth); });
+document.body.classList.add("auth-pending");
+onAuthStateChanged(auth,async user=>{
+  currentUser=user; currentRole=null; projects=[];
+  if(!user){
+    document.body.classList.add("auth-pending");
+    gate.style.display="block"; logout.style.display="none";
+    $("rows").innerHTML=""; render();
+    return;
+  }
+  gate.style.display="none"; document.body.classList.remove("auth-pending");
+  logout.style.display="inline-block";
+  if(user.uid===OWNER_UID){
+    currentRole="owner";
+  } else {
+    try {
+      const profile=await getDoc(doc(db,"users",user.uid));
+      if(!profile.exists()||profile.data().role!=="partner"||profile.data().active!==true){
+        setNotice("This account is not registered as an active delivery partner. Ask the owner to approve its partner profile.",true);
+        projects=[]; render(); return;
+      }
+      currentRole="partner";
+    } catch(error) {
+      setNotice("Could not verify partner access: "+(error.code||"unknown"),true);
+      projects=[]; render(); return;
+    }
+  }
+  await loadProjects();
+});
 </script>
 </body></html>
