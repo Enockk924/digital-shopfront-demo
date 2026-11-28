@@ -214,7 +214,7 @@ function showDetails(project) {
   activeProjectId = project.id;
   $("detailTitle").textContent = project.name+" · "+project.customer;
   $("dstage").innerHTML = (isOwner()?stages:partnerStages).map(x=>'<option>'+esc(x)+'</option>').join("");
-  $("dstage").value = project.stage;
+  $("dstage").value = isOwner() ? project.stage : (partnerStages.includes(project.stage) ? project.stage : partnerStages[0]);
   $("dpayment").value = project.payment || "Not paid";
   $("ddue").value = project.due || "";
   renderPartners();
